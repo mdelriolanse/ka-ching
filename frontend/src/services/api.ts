@@ -10,7 +10,19 @@ async function http<T>(url: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>
 }
 
-a
+import { api } from '../services/api'
+
+// Upload calendar
+async function handleUpload(file: File, userId: string) {
+  const result = await api.calendar.upload(userId, file)
+  console.log(result.message, result.events_count)
+}
+
+// Fetch events
+async function fetchEvents(userId: string) {
+  const events = await api.calendar.fetch(userId)
+  console.log(events)
+}
 
 export const api = {
   tasks: {
