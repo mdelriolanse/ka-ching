@@ -15,10 +15,15 @@ export default function CalendarView(){
   })() },[])
 
   async function uploadIcal(){
-    if(!fileRef.current?.files?.[0]) return
-    const file = fileRef.current.files[0]
-    await api.calendar.upload('demo', file)
+  if(!fileRef.current?.files?.[0]) return alert("No file selected")
+  const file = fileRef.current.files[0]
+  try {
+    const result = await api.calendar.upload('demo', file)
+    alert(result.message + " (" + result.events_count + " events)")
+  } catch (err) {
+    alert("Upload failed: " + err)
   }
+}
 
   async function syncFromLink(){
     // Optionally handled server-side; placeholder to signal feature

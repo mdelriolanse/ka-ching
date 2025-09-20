@@ -2,6 +2,20 @@ import axios from 'axios'
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
 
+import { api } from '../services/api'
+
+// Upload calendar
+async function handleUpload(file: File, userId: string) {
+  const result = await api.calendar.upload(userId, file)
+  console.log(result.message, result.events_count)
+}
+
+// Fetch events
+async function fetchEvents(userId: string) {
+  const events = await api.calendar.fetch(userId)
+  console.log(events)
+}
+
 export const api = {
   users: {
     getXp: async (username: string) => {
@@ -40,3 +54,6 @@ export const api = {
     }
   }
 }
+
+
+
