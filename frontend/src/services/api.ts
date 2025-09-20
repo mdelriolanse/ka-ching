@@ -2,17 +2,15 @@ import axios from 'axios'
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
 
-import { api } from '../services/api'
-
 // Upload calendar
 async function handleUpload(file: File, userId: string) {
-  const result = await api.calendar.upload(userId, file)
+  const result = await api.tasks.calendar.upload(userId, file)
   console.log(result.message, result.events_count)
 }
 
 // Fetch events
 async function fetchEvents(userId: string) {
-  const events = await api.calendar.fetch(userId)
+  const events = await api.tasks.calendar.fetch(userId)
   console.log(events)
 }
 
@@ -51,6 +49,22 @@ export const api = {
         username
       })
       return res.data
+    },
+    calendar: {
+      upload: async (userId: string, file: File) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await axios.post(`${BACKEND_URL}/calendar/${userId}/upload`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        return res.data;
+      },
+      fetch: async (userId: string) => {
+        const res = await axios.get(`${BACKEND_URL}/calendar/${userId}`);
+        return res.data;
+      }
     }
   }
 }
