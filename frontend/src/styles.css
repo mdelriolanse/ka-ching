@@ -1,0 +1,48 @@
+:root{
+  --cornell-red:#D43C3C;
+  --cornell-white:#FFFFFF;
+  --bg-dark:#0d0f12;
+  --bg-panel:#141821;
+  --text-dim:#aab0be;
+  --accent:#B31B1B;
+  --success:#7CFC00;
+  --coin:#ffd166;
+}
+
+*{box-sizing:border-box}
+html,body,#root{height:100%}
+body{margin:0;background:var(--bg-dark);color:var(--cornell-white);font-family:"Space Grotesk","Roboto Mono",ui-monospace,monospace}
+
+.title-arcade{font-family:"Press Start 2P","VT323",monospace;letter-spacing:2px;text-shadow:0 4px 0 #000,0 0 16px rgba(179,27,27,.3)}
+.heading{font-family:"VT323","Press Start 2P",monospace;letter-spacing:1px}
+
+.panel{background:var(--bg-panel);border:2px solid #202531;border-radius:12px;padding:16px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.btn{background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));border:2px solid var(--cornell-white);color:var(--cornell-white);padding:10px 14px;border-radius:10px;cursor:pointer;transition:transform .1s ease, background .2s}
+.btn:hover{transform:translateY(-2px);background:rgba(255,255,255,.06)}
+.btn-primary{border-color:var(--accent);color:var(--cornell-white);box-shadow:0 0 0 2px rgba(212,60,60,.15) inset}
+.btn-coin{border-color:var(--coin);color:var(--coin)}
+
+/* Premium input field */
+.field{width:100%;background:rgba(255,255,255,.02);border:2px solid #2a2f3a;color:#fff;padding:12px 12px;border-radius:10px;font-family:"Space Grotesk",system-ui,sans-serif}
+.field::placeholder{color:#7e879a}
+.field:focus{outline:none;border-color:var(--cornell-red);box-shadow:0 0 0 2px rgba(212,60,60,.15)}
+
+.grid{display:grid;gap:16px}
+.grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+
+.blink{animation:blink 1.2s steps(2,end) infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+.coin-pop{animation:coin .7s ease-out forwards}
+@keyframes coin{0%{transform:translateY(0) scale(0.7);opacity:0}50%{transform:translateY(-16px) scale(1.05);opacity:1}100%{transform:translateY(0) scale(1);opacity:0}}
+
+.xp-fill{transition:width .6s cubic-bezier(.2,.8,.2,1)}
+
+.nav{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:2px solid #22262f}
+.nav a{color:var(--cornell-white);text-decoration:none;margin-right:16px;font-family:"VT323"}
+.nav .brand{color:var(--cornell-white)}
+
+.mono-dim{color:var(--text-dim)}
+
+
