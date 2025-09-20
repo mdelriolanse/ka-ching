@@ -20,12 +20,12 @@ class User:
         self.completed_tasks = []
         self.to_do_tasks = []
         self.last_completed_task_time = None
-        self.upgrades = {}        
+        self.inventory = {}        
         
         self.streak = 1
         self.boost = 1 # multiplicative boost to xp gain
         self.permanent_boost = 1 # permanent boost to xp gain
-        self.inventory = {
+        self.upgrades = {
             "Focus Lamp": (0,8),
             "Coffee Mug": (0,8),
             "Ergonomic Chair": (0,8),
