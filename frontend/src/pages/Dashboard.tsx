@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Coins, CheckCircle2, Plus, Sparkles } from 'lucide-react'
 import { api } from '../services/api'
 import { useSfx } from '../sfx/useSfx'
+import { Sword, RefreshCw } from 'lucide-react'
 
 type Task = { id: string; title: string; durationMin?: number; scheduledAt?: string; completed?: boolean }
 
@@ -15,6 +16,36 @@ export default function Dashboard(){
   const [streak,setStreak] = useState(0)
   const coinRef = useRef<HTMLDivElement>(null)
   const { playKaching } = useSfx()
+  const [upgrades, setUpgrades] = useState<{[key: string]: [number, number]}>({})
+  const [rebirths, setRebirths] = useState(0)
+
+  useEffect(()=>{
+    api.users.getXp('demo').then(x=>{
+      setXp(x.xp)
+      setLevel(x.level)
+      setStreak(x.streak||0)
+      setUpgrades(x.upgrades||{})
+      setRebirths(x.rebirths||0)
+    }).catch(()=>{})
+  },[])
+
+  async function buyUpgrade(name: string){
+    try{
+      const res = await api.users.purchaseUpgrade('demo', name)
+      setXp(res.summary.xp)
+      setUpgrades(res.summary.upgrades)
+    }catch{}
+  }
+
+  async function doRebirth(){
+    try{
+      const res = await api.users.rebirth('demo')
+      setXp(res.summary.xp)
+      setLevel(res.summary.level)
+      setRebirths(res.summary.rebirths)
+      setUpgrades(res.summary.upgrades)
+    }catch{}
+  }
 
   useEffect(()=>{
     api.users.getXp('demo').then(x=>{ setXp(x.xp); setLevel(x.level); setStreak(x.streak||0) }).catch(()=>{})
@@ -95,6 +126,34 @@ export default function Dashboard(){
           Calls: tasks → POST /tasks, POST /tasks/:id/complete; users → GET /users/:id/xp
         </div>
       </aside>
+
+      <aside className="panel" style={{marginTop:12}}>
+        <h2 className="title-arcade" style={{color:'var(--cornell-red)',marginBottom:12}}>UPGRADES</h2>
+        <div style={{display:'flex',flexDirection:'column',gap:8}}>
+          {Object.entries(upgrades).map(([name,[count,cost]])=>(
+            <div key={name} style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              <div>
+                <div className="heading" style={{fontSize:16}}>{name}</div>
+                <div className="mono-dim">Lv {count} • Cost {cost} XP</div>
+              </div>
+              <button className="btn btn-primary" onClick={()=>buyUpgrade(name)}>
+                <Sword size={14}/> Buy
+              </button>
+            </div>
+          ))}
+        </div>
+      </aside>
+
+      <aside className="panel" style={{marginTop:12}}>
+        <h2 className="title-arcade" style={{color:'var(--cornell-red)',marginBottom:12}}>REBIRTH</h2>
+        <div style={{marginBottom:8}} className="mono-dim">
+          Rebirths: {rebirths}
+        </div>
+        <button className="btn btn-danger" onClick={doRebirth}>
+          <RefreshCw size={14}/> Rebirth
+        </button>
+      </aside>
+
     </div>
   )
 }
