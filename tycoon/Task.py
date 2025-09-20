@@ -126,24 +126,6 @@ class Task:
     def add_reminder(self, method: str, minutes: int):
         self.reminders.append({"method": method, "minutes": minutes})
 
-    def to_dict(self):
-        """Convert to dictionary, useful for MongoDB or Google Calendar API"""
-        return {
-            "title": self.title,
-            "start_time": self.start_time.isoformat(),
-            "end_time": self.end_time.isoformat(),
-            "description": self.description,
-            "location": self.location,
-            "attendees": self.attendees,
-            "reminders": self.reminders,
-            "all_day": self.all_day,
-            "color_id": self.color_id,
-            "calendar_id": self.calendar_id,
-            "xp_reward": self.xp_reward,
-            "task_type": self.task_type,
-            "completed": self.completed,
-        }
-
 
 # -------------------------
 # Example Usage

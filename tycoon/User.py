@@ -14,22 +14,34 @@ class User:
     def __init__(self, username):
         self.username = username
         self.level = 1
-        self.xp = 0
+        self.xp = 0.0
         self.xp_to_next_level = 100  # starting threshold
-        self.streak = 1
-        self.boost = 0 # multiplicative boost to xp gain
-        self.inventory = {}  # e.g., {"Double XP Boost": 2} means 2 uses left
+
         self.completed_tasks = []
         self.to_do_tasks = []
         self.last_completed_task_time = None
+        self.upgrades = {}        
+        
+        self.streak = 1
+        self.boost = 1 # multiplicative boost to xp gain
+        self.permanent_boost = 1 # permanent boost to xp gain
+        self.inventory = {
+            "Focus Lamp": (0,8),
+            "Coffee Mug": (0,8),
+            "Ergonomic Chair": (0,8),
+            "Standing Desk": (0,8),
+            "Noise-Cancelling Headphones": (0,8),
+            "Motivational Poster": (0,8),
+            "Time Management Book": (0,8),
+            "Productivity App Subscription": (0,8)
+            }  # e.g., {"Time Management Book": (2,32)} means 2 owned, cost 32 xp
+        self.rebirths = 0
 
     # Handle adding xp to user total
     # Params: self - instance of User, amount - xp to add
     def add_xp(self, amount):
         # Apply boost if available
-        ammount *= int(1 + self.boost / 10)
-
-        self.xp += amount
+        self.xp += amount * self.boost * self.permanent_boost
         print(f"{self.username} gained {amount} XP!")
 
         # Check level up
@@ -122,6 +134,51 @@ class User:
             return True
         print(f"No boosts left for {item_name}.")
         return False
+    
+    # -----------------------------
+    # Upgrade / Rebirth Methods
+    # -----------------------------
+
+    # Purchase an upgrade for the user
+    # Params: self - instance of User, upgrade_name - name of the upgrade,
+    # Returns: True if upgrade purchased, False if not enough xp
+    def purchase_upgrade(self, upgrade_name):
+        if upgrade_name in self.upgrades:
+            if self.upgrades[upgrade_name][1] <= self.xp:
+                self.xp -= self.upgrades[upgrade_name][1]
+                self.upgrades[upgrade_name] = (self.upgrades[upgrade_name][0] + 1, self.upgrades[upgrade_name][1] * 2)
+                print(f"{self.username} purchased upgrade: {upgrade_name}.")
+                return True
+            else:
+                print(f"Not enough XP to purchase {upgrade_name}. Needed: {self.upgrades[upgrade_name][1]}, Available: {self.xp}.")
+                return False
+        else:
+            print(f"Invalid upgrade.")
+            return False
+        
+    # Handle income from upgrades
+    # Params: self - instance of User
+    def constant_income(self):
+        income = 0
+        for upgrade in self.upgrades:
+            income += self.upgrades[upgrade][0] * 0.0001  # Each second gives 0.0001 XP per upgrade level
+        self.add_xp(income)
+        print(f"{self.username} received constant income of {income} XP.")
+    
+    def rebirth(self):
+        if self.level >= 10:  # Minimum level to rebirth
+            self.rebirths += 1
+            self.level = 1
+            self.xp = 0
+            self.xp_to_next_level = 100
+            self.streak = 1
+            self.boost = 1
+            self.permanent_boost += self.xp/1000  # Increase permanent boost by 1x per 1000 xp
+            self.inventory = {item: (0, cost) for item, cost in self.inventory.items()}  # Reset inventory counts
+            self.upgrades = {}  # Reset upgrades
+            print(f"{self.username} has rebirthed! Permanent boost is now {self.permanent_boost}x.")
+        else:
+            print(f"{self.username} needs to be at least level 10 to rebirth. Current level: {self.level}.")
 
     # -------------------------
     # Display / Summary
