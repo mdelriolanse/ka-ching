@@ -1,17 +1,36 @@
 import axios from 'axios'
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
+const CALENDAR_URL = (import.meta.env as any).VITE_CALENDAR_URL || 'http://localhost:5000'
 
 // Upload calendar
 async function handleUpload(file: File, userId: string) {
-  const result = await api.tasks.calendar.upload(userId, file)
+  const result = await api.calendar.upload(userId, file)
   console.log(result.message, result.events_count)
 }
 
 // Fetch events
 async function fetchEvents(userId: string) {
-  const events = await api.tasks.calendar.fetch(userId)
+  const events = await api.calendar.fetch(userId)
   console.log(events)
+}
+
+const calendar = {
+  upload: async (userId: string, file: File) => {
+    const formData = new FormData()
+    formData.append('ical', file)
+    formData.append('user_id', userId)
+    const res = await axios.post(`${CALENDAR_URL}/upload`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+    return res.data
+  },
+  fetch: async (userId: string) => {
+    const res = await axios.get(`${CALENDAR_URL}/events/${userId}`)
+    return res.data
+  }
 }
 
 export const api = {
@@ -50,23 +69,9 @@ export const api = {
       })
       return res.data
     },
-    calendar: {
-      upload: async (userId: string, file: File) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        const res = await axios.post(`${BACKEND_URL}/calendar/${userId}/upload`, formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        });
-        return res.data;
-      },
-      fetch: async (userId: string) => {
-        const res = await axios.get(`${BACKEND_URL}/calendar/${userId}`);
-        return res.data;
-      }
-    }
-  }
+    calendar
+  },
+  calendar
 }
 
 
