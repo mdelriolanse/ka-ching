@@ -1,7 +1,6 @@
 /__pycache__/*
 .venv/
 .cache/
-*.json
 *.txt
 *.pyc
 *.python-version
