@@ -53,35 +53,43 @@ export default function Dashboard(){
 
   const xpPercent = useMemo(()=> Math.min(100, (xp % 100)), [xp])
 
-  function addTask(){
-    if(!title.trim()) return
-    const temp: Task = { id: Math.random().toString(36).slice(2), title, durationMin: duration }
-    setTasks(prev=>[temp,...prev])
+  function addTask() {
+  if (!title.trim()) return
+  api.tasks.create('demo', title, duration).then(res => {
+    const taskFromBackend = {
+      id: res.id,
+      title: res.title,
+      durationMin: res.durationMin
+    }
+    setTasks(prev => [taskFromBackend, ...prev])
     setTitle('')
-    // Integration point to tycoon framework: rank priority and difficulty
-    api.tycoon.rankTask(temp)
-  }
+  }).catch(console.error)
+}
 
-  async function completeTask(id: string){
-    setTasks(prev=> prev.map(t=> t.id===id?{...t, completed:true}:t))
-    // Ka-ching sound & coin pop
-    playKaching()
-    coinRef.current?.classList.add('coin-pop')
-    setTimeout(()=> coinRef.current?.classList.remove('coin-pop'), 800)
+  async function completeTask(id: string) {
+  setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: true } : t))
+  playKaching()
+  coinRef.current?.classList.add('coin-pop')
+  setTimeout(() => coinRef.current?.classList.remove('coin-pop'), 800)
 
-    // Backend: complete task & gain XP
-    try{
-      const payload = await api.tasks.complete(id)
-      setXp(payload.xp)
-      setLevel(payload.level)
-      setStreak(payload.streak||0)
-    }catch{}
+  try {
+    const payload = await api.tasks.complete(id, 'demo')
+    setXp(payload.xp)
+    setLevel(payload.level)
+    setStreak(payload.streak || 0)
+  } catch (err) {
+    console.error(err)
   }
+}
 
-  async function autofit(){
-    // Backend: schedule tasks into user calendar based on availability
-    api.tasks.autofit('demo')
+async function autofit() {
+  try {
+    await api.tasks.autofit('demo')
+  } catch (err) {
+    console.error(err)
   }
+}
+
 
   return (
     <div className="grid grid-3">

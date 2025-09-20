@@ -1,109 +1,139 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from datetime import datetime
 from User import User
 from Task import Task
 
 app = Flask(__name__)
 CORS(app)
 
-# Simple in-memory store (replace with MongoDB later)
+# In-memory stores
 users = {}
+tasks = {}
 
-def get_user(username: str) -> User:
+# Helper
+def get_or_create_user(username: str) -> User:
     if username not in users:
         users[username] = User(username)
     return users[username]
 
-# ---------------- TASK ROUTES ---------------- #
+# -------------------------
+# User endpoints
+# -------------------------
+@app.route("/users/<username>/xp", methods=["GET"])
+def get_user_xp(username):
+    try:
+        user = get_or_create_user(username)
+        return jsonify(user.summary())
+    except Exception as e:
+        print(f"Error fetching user XP: {e}")
+        return jsonify({"error": str(e)}), 500
 
-@app.post("/tasks")
-def create_task():
-    data = request.json
-    username = data.get("username")
-    title = data.get("title")
-    duration_min = data.get("durationMin", 30)
+@app.route("/users/<username>/upgrades/<upgrade_name>", methods=["POST"])
+def purchase_upgrade(username, upgrade_name):
+    try:
+        user = get_or_create_user(username)
+        success = user.purchase_upgrade(upgrade_name)
+        return jsonify({"success": success, "summary": user.summary()})
+    except Exception as e:
+        print(f"Error purchasing upgrade: {e}")
+        return jsonify({"error": str(e)}), 500
 
-    if not username or not title:
-        return jsonify({"error": "username and title are required"}), 400
-
-    user = get_user(username)
-    task = Task(title=title, duration=duration_min)
-    user.add_task(task)
-
-    return jsonify({"id": task.id, "title": task.title, "duration": task.duration})
-
-@app.post("/tasks/<username>/<task_id>/complete")
-def complete_task(username, task_id):
-    user = get_user(username)
-
-    task = next((t for t in user.to_do_tasks if str(t.id) == str(task_id)), None)
-    if not task:
-        return jsonify({"error": f"Task {task_id} not found"}), 404
-
-    task_time = datetime.now()
-    user.finish_task(task)
-    user.last_completed_task_time = task_time
-
-    return jsonify({
-        "xp": user.xp,
-        "level": user.level,
-        "streak": user.streak
-    })
-
-@app.get("/tasks/autofit")
-def autofit():
-    username = request.args.get("userId")
-    if not username:
-        return jsonify({"error": "userId required"}), 400
-
-    # Placeholder scheduling logic
-    user = get_user(username)
-    scheduled = len(user.to_do_tasks)
-
-    return jsonify({"scheduled": scheduled})
-
-# ---------------- USER ROUTES ---------------- #
-
-@app.get("/users/<username>/xp")
-def get_xp(username):
-    user = get_user(username)
-    return jsonify({
-        "xp": user.xp,
-        "level": user.level,
-        "streak": user.streak
-    })
-
-@app.get("/users/<username>/summary")
-def get_summary(username):
-    user = get_user(username)
-    return jsonify(user.summary())
-
-@app.post("/users/<username>/purchase-upgrade")
-def purchase_upgrade(username):
-    user = get_user(username)
-    data = request.json
-    upgrade_name = data.get("upgrade")
-    success = user.purchase_upgrade(upgrade_name)
-    return jsonify({"success": success, "xp": user.xp, "upgrades": user.upgrades})
-
-@app.post("/users/<username>/rebirth")
+@app.route("/users/<username>/rebirth", methods=["POST"])
 def rebirth(username):
-    user = get_user(username)
-    user.rebirth()
-    return jsonify({"rebirths": user.rebirths, "permanent_boost": user.permanent_boost})
+    try:
+        user = get_or_create_user(username)
+        success = user.rebirth()
+        return jsonify({"success": success, "summary": user.summary()})
+    except Exception as e:
+        print(f"Error during rebirth: {e}")
+        return jsonify({"error": str(e)}), 500
 
-@app.get("/users/<username>/passive-xp")
-def passive_xp(username):
-    user = get_user(username)
-    user.constant_income()
-    return jsonify({
-        "xp": user.xp,
-        "level": user.level,
-        "streak": user.streak
-    })
+# -------------------------
+# Task endpoints
+# -------------------------
+@app.route("/tasks", methods=["POST"])
+def create_task():
+    try:
+        data = request.json
+        if not isinstance(data, dict):
+            return jsonify({"error": "Invalid JSON payload"}), 400
 
-# ---------------- MAIN ---------------- #
+        username = data.get("username")
+        title = data.get("title")
+        duration = data.get("durationMin", 25)
 
+        if not username or not isinstance(username, str):
+            return jsonify({"error": "Missing or invalid username"}), 400
+        if not title or not isinstance(title, str):
+            return jsonify({"error": "Missing or invalid title"}), 400
+
+        try:
+            duration_val = int(duration)
+        except Exception:
+            print(f"Error converting durationMin: {duration}")
+            return jsonify({"error": "durationMin must be an integer"}), 400
+
+        task = Task(title, duration_min=duration_val, xp_reward=duration_val)
+        tasks[task.id] = task
+
+        user = get_or_create_user(username)
+        user.add_task(task)
+
+        return jsonify({
+            "id": task.id,
+            "title": task.title,
+            "durationMin": duration,
+            "xp_reward": task.xp_reward
+        })
+    except Exception as e:
+        print(f"Error creating task: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/tasks/<task_id>/complete", methods=["POST"])
+def complete_task(task_id):
+    try:
+        data = request.json
+        if not isinstance(data, dict):
+            return jsonify({"error": "Invalid JSON payload"}), 400
+
+        username = data.get("username")
+        if not username or not isinstance(username, str):
+            return jsonify({"error": "Missing or invalid username"}), 400
+
+        user = get_or_create_user(username)
+
+        task = tasks.get(task_id)
+        if not task:
+            return jsonify({"error": "Task not found"}), 404
+
+        # Ensure the user actually has the task
+        if task not in user.to_do_tasks:
+            return jsonify({"error": "Task not assigned to user"}), 403
+
+        user.finish_task(task)
+        return jsonify({
+            "xp": user.xp,
+            "level": user.level,
+            "streak": user.streak
+        })
+    except Exception as e:
+        print(f"Error completing task: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/tasks/autofit", methods=["POST"])
+def autofit():
+    try:
+        data = request.json
+        username = data.get("username")
+        user = get_or_create_user(username)
+        # TODO: implement scheduling logic
+        return jsonify({"message": f"Autofit not yet implemented for {username}"})
+    except Exception as e:
+        print(f"Error in autofit: {e}")
+        return jsonify({"error": str(e)}), 500
+
+# -------------------------
+# Run server
+# -------------------------
 if __name__ == "__main__":
-    app.run(port=8000, debug=True)
+    app.run(debug=True, port=8000)
