@@ -26,7 +26,7 @@ export default function App(){
         </Routes>
       </div>
       <footer style={{padding:12,textAlign:'center',color:'var(--text-dim)'}}>
-        Built for arcaders • Cornell palette • Neovim vibes
+        BigRed/Hacks 2025 - made by Maxwell, Mateo, Claire, and Abhay
       </footer>
     </div>
   )

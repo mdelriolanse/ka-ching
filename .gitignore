@@ -4,3 +4,5 @@
 *.txt
 *.pyc
 *.python-version
+/frontend/node_modules/
+/frontend/public/sfx

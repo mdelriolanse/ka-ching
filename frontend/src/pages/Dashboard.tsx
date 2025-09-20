@@ -28,7 +28,7 @@ export default function Dashboard(){
     setTasks(prev=>[temp,...prev])
     setTitle('')
     // Integration point to tycoon framework: rank priority and difficulty
-    // api.tycoon.rankTask(temp)
+    api.tycoon.rankTask(temp)
   }
 
   async function completeTask(id: string){
@@ -49,7 +49,7 @@ export default function Dashboard(){
 
   async function autofit(){
     // Backend: schedule tasks into user calendar based on availability
-    // api.tasks.autofit('demo')
+    api.tasks.autofit('demo')
   }
 
   return (
