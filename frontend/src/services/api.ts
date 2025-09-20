@@ -10,6 +10,8 @@ async function http<T>(url: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>
 }
 
+a
+
 export const api = {
   tasks: {
     create: (title: string, durationMin?: number) =>
@@ -39,6 +41,7 @@ export const api = {
     rankTask: (task: { id:string; title:string; durationMin?:number }) => http(`${CORE_URL}/tycoon/rank`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(task) })
   }
 }
+
 
 
 
