@@ -15,6 +15,8 @@ async function fetchEvents(userId: string) {
   console.log(events)
 }
 
+
+
 const calendar = {
   upload: async (userId: string, file: File) => {
     const formData = new FormData()
@@ -29,6 +31,10 @@ const calendar = {
   },
   fetch: async (userId: string) => {
     const res = await axios.get(`${CALENDAR_URL}/events/${userId}`)
+    return res.data
+  },
+  clear: async (userId: string) => {
+    const res = await axios.post(`${CALENDAR_URL}/events/${userId}/clear`)
     return res.data
   }
 }

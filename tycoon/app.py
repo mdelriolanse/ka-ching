@@ -248,6 +248,17 @@ def get_events(user_id):
     except Exception as e:
         print(f"Error fetching events: {e}")
         return jsonify({"error": str(e)}), 500
+    
+@app.route('/events/<user_id>/clear', methods=['POST'])
+def clear_events(user_id):
+    try:
+        user = get_or_create_user(user_id)
+        user.events = []  # Clear in-memory events
+        return jsonify({"message": f"All events cleared for {user_id}"})
+    except Exception as e:
+        print(f"Error clearing events: {e}")
+        return jsonify({"error": str(e)}), 500
+
 
     
 # -------------------------

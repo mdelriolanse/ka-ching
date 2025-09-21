@@ -53,11 +53,25 @@ export default function CalendarView() {
     }
   }
 
-  // Optional: sync from iCal URL
+  // Sync from iCal URL
   async function syncFromLink() {
     if (!ical.trim()) return
     // Placeholder: await api.calendar.importFromLink(userId, ical)
   }
+
+  // Clear events
+  async function clearCalendar() {
+    if (!confirm("Are you sure you want to clear all events?")) return
+    try {
+      const result = await api.calendar.clear(userId)
+      alert(result.message)
+      setEvents([]) // Clear frontend state
+    } catch (err: any) {
+      console.error(err)
+      alert("Failed to clear calendar: " + (err.response?.data?.error || err.message))
+    }
+  }
+
 
   return (
     <div className="grid grid-2">
@@ -87,6 +101,12 @@ export default function CalendarView() {
             Upload .ics
           </button>
         </div>
+        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+          <button className="btn btn-danger" onClick={clearCalendar}>
+            Clear Calendar
+          </button>
+        </div>
+
 
         <hr style={{ borderColor: '#22262f', margin: '16px 0' }} />
 
