@@ -57,7 +57,7 @@ class Task:
                 response_mime_type="application/json",
                 response_schema=XPScore,
                 thinking_config=types.ThinkingConfig(thinking_budget=0)
-        )
+            )
         )
         self.xp_reward = json.loads(response.text)['xp_reward']
 

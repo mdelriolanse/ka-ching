@@ -1,4 +1,5 @@
 import os
+import json
 import uuid
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -10,6 +11,8 @@ from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 from pymongo import MongoClient
 from datetime import datetime
+import google.genai as genai
+from google.genai import types
 
 # Connect to Flask
 app = Flask(__name__)
@@ -137,14 +140,78 @@ def complete_task(task_id):
         print(f"Error completing task: {e}")
         return jsonify({"error": str(e)}), 500
 
+client = genai.Client(api_key=os.environ.get("GOOGLE_API_KEY"))
+
 @app.route("/tasks/autofit", methods=["POST"])
 def autofit():
     try:
         data = request.json
         username = data.get("username")
         user = get_or_create_user(username)
-        # TODO: implement scheduling logic
-        return jsonify({"message": f"Autofit not yet implemented for {username}"})
+
+        pending_tasks = [
+        {
+            "id": t.id,
+            "title": t.title,
+            "duration": getattr(t, "durationMin", 25),
+            "xp_reward": getattr(t, "xp_reward", 0),
+            "due_date": getattr(t, "due_date", None)
+        }
+        for t in user.to_do_tasks
+        if not getattr(t, "completed", False)
+]
+
+        # Gather calendar events
+        pending_events = [
+            {
+                "title": e.title,
+                "start": e.start.isoformat() if hasattr(e.start, "isoformat") else str(e.start),
+                "end": e.end.isoformat() if hasattr(e.end, "isoformat") else str(e.end)
+            }
+            for e in user.events
+        ]
+
+        # Build scheduling prompt
+        prompt = f"""
+        You are a scheduling assistant. 
+        The user has tasks with durations (minutes), XP rewards, and optional due dates. 
+        Schedule them into free time so that:
+        1. "end" is equal to "start" + duration in minutes.
+        2. No task overlaps existing events.
+        3. Each task ends before its due date (if provided).
+        4. Higher XP reward tasks are scheduled first.
+        5. Respond in valid JSON with a list of scheduled tasks.
+
+        Tasks: {json.dumps(pending_tasks, indent=2)}
+        Existing events: {json.dumps(pending_events, indent=2)}
+
+        Respond ONLY with JSON:
+        [
+          {{"id": "task_id", "title": "title", "start": "2025-09-21T10:00:00", "end": "2025-09-21T10:30:00"}}
+        ]
+        """
+
+        # Call Gemini with strict JSON output
+       
+        response = client.models.generate_content(
+            contents = prompt.strip(),
+            model="gemini-2.5-flash",
+
+            config=types.GenerateContentConfig(
+                temperature=0,
+                response_mime_type="application/json",
+                thinking_config=types.ThinkingConfig(thinking_budget=0)
+            ),
+        )
+
+        # Parse Gemini response
+        schedule = json.loads(response.text)
+
+        return jsonify({
+            "message": f"Autofit complete for {username}",
+            "scheduled": schedule
+        })
+
     except Exception as e:
         print(f"Error in autofit: {e}")
         return jsonify({"error": str(e)}), 500

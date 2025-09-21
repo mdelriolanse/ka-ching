@@ -72,6 +72,32 @@ export default function CalendarView() {
     }
   }
 
+  async function runAutofit() {
+    try {
+      const result = await api.tasks.autofit(userId)
+      const scheduledTasks = result.scheduled || []
+  
+      if (scheduledTasks.length === 0) {
+        alert("No tasks were scheduled.")
+        return
+      }
+  
+      // Convert to FullCalendar event objects
+      const formatted = scheduledTasks.map((task: any) => ({
+        id: task.id,
+        title: task.title,
+        start: new Date(task.start),
+        end: new Date(task.end),
+      }))
+  
+      // Merge with existing events
+      setEvents((prev) => [...prev, ...formatted])
+      alert(`${formatted.length} tasks added to calendar!`)
+    } catch (err: any) {
+      console.error(err)
+      alert("Autofit failed: " + (err.response?.data?.error || err.message))
+    }
+  }
 
   return (
     <div className="grid grid-2">
@@ -106,6 +132,12 @@ export default function CalendarView() {
             Clear Calendar
           </button>
         </div>
+        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+          <button className="btn btn-success" onClick={runAutofit}>
+            Autofit Tasks
+          </button>
+        </div>
+
 
 
         <hr style={{ borderColor: '#22262f', margin: '16px 0' }} />
