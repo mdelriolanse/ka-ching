@@ -1,4 +1,14 @@
 {
+  "name": "ka-ching-root",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Monorepo root package.json: convenience scripts to run the frontend",
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "preview": "npm --prefix frontend run preview",
+    "install:all": "npm install && npm --prefix frontend install"
+  },
   "dependencies": {
     "axios": "^1.12.2"
   }

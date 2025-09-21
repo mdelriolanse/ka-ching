@@ -26,7 +26,7 @@ export default function Dashboard(){
       setStreak(x.streak||0)
       setUpgrades(x.upgrades||{})
       setRebirths(x.rebirths||0)
-    }).catch(()=>{})
+    }).catch(console.error)
   },[])
 
   async function buyUpgrade(name: string){
@@ -47,48 +47,73 @@ export default function Dashboard(){
     }catch{}
   }
 
-  useEffect(()=>{
-    api.users.getXp('demo').then(x=>{ setXp(x.xp); setLevel(x.level); setStreak(x.streak||0) }).catch(()=>{})
-  },[])
+  // Constant income from upgrades
+  useEffect(() => {
+    const interval = setInterval(() => {
+      let income = 0
+      for (const key in upgrades) {
+        const [level] = upgrades[key]
+        income += level * 0.0001 // XP per second per upgrade
+      }
+      if (income > 0) {
+        setXp(prev => prev + income)
+      }
+    }, 1000) // every second
+    return () => clearInterval(interval)
+  },[upgrades])
+
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await api.users.getXp('demo') // could call a "tick" endpoint
+        setXp(res.xp)
+        setLevel(res.level)
+        setStreak(res.streak || 0)
+        setUpgrades(res.upgrades || {})
+      } catch (err) { console.error(err) }
+    }, 60000) // sync every 60s
+    return () => clearInterval(interval)
+  }, [])
+
 
   const xpPercent = useMemo(()=> Math.min(100, (xp % 100)), [xp])
 
   function addTask() {
-  if (!title.trim()) return
-  api.tasks.create('demo', title, duration).then(res => {
-    const taskFromBackend = {
-      id: res.id,
-      title: res.title,
-      durationMin: res.durationMin
-    }
-    setTasks(prev => [taskFromBackend, ...prev])
-    setTitle('')
-  }).catch(console.error)
-}
+    if (!title.trim()) return
+    api.tasks.create('demo', title, duration).then(res => {
+      const taskFromBackend = {
+        id: res.id,
+        title: res.title,
+        durationMin: res.durationMin
+      }
+      setTasks(prev => [taskFromBackend, ...prev])
+      setTitle('')
+    }).catch(console.error)
+  }
 
   async function completeTask(id: string) {
-  setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: true } : t))
-  playKaching()
-  coinRef.current?.classList.add('coin-pop')
-  setTimeout(() => coinRef.current?.classList.remove('coin-pop'), 800)
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: true } : t))
+    playKaching()
+    coinRef.current?.classList.add('coin-pop')
+    setTimeout(() => coinRef.current?.classList.remove('coin-pop'), 800)
 
-  try {
-    const payload = await api.tasks.complete(id, 'demo')
-    setXp(payload.xp)
-    setLevel(payload.level)
-    setStreak(payload.streak || 0)
-  } catch (err) {
-    console.error(err)
+    try {
+      const payload = await api.tasks.complete(id, 'demo')
+      setXp(payload.xp)
+      setLevel(payload.level)
+      setStreak(payload.streak || 0)
+    } catch (err) {
+      console.error(err)
+    }
   }
-}
 
-async function autofit() {
-  try {
-    await api.tasks.autofit('demo')
-  } catch (err) {
-    console.error(err)
+  async function autofit() {
+    try {
+      await api.tasks.autofit('demo')
+    } catch (err) {
+      console.error(err)
+    }
   }
-}
 
 
   return (

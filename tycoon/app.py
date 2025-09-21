@@ -1,10 +1,24 @@
+import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from User import User
 from Task import Task
+from icalendar import Calendar
+from dotenv import load_dotenv
+from werkzeug.utils import secure_filename
+from pymongo import MongoClient
 
+# Connect to Flask
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
+app.config['UPLOAD_FOLDER'] = 'uploads/'
+load_dotenv()
+
+# Connect to MongoDB
+mongo_uri = os.getenv('MONGO_URI')
+client = MongoClient(mongo_uri)
+db = client['ical_calendar']
+events_collection = db['events']
 
 # In-memory stores
 users = {}
@@ -73,7 +87,7 @@ def create_task():
             print(f"Error converting durationMin: {duration}")
             return jsonify({"error": "durationMin must be an integer"}), 400
 
-        task = Task(title, duration_min=duration_val, xp_reward=duration_val)
+        task = Task(title, durationMin=duration_val, xp_reward=duration_val)
         tasks[task.id] = task
 
         user = get_or_create_user(username)
@@ -131,9 +145,74 @@ def autofit():
     except Exception as e:
         print(f"Error in autofit: {e}")
         return jsonify({"error": str(e)}), 500
+    
+# -------------------------
+# MongoDB + iCal endpoints
+# -------------------------
 
+def parse_ical(file_path):
+    try:
+        with open(file_path, 'rb') as f:
+            gcal = Calendar.from_ical(f.read())
+
+        events = []
+        for component in gcal.walk():
+            if component.name == "VEVENT":
+                event = {
+                    "title": str(component.get('summary')),
+                    "description": str(component.get('description') or ""),
+                    "location": str(component.get('location') or ""),
+                    "start": component.get('dtstart').dt.isoformat(),
+                    "end": component.get('dtend').dt.isoformat()
+                }
+                events.append(event)
+        return events
+    except Exception as e:
+        print(f"Error parsing iCal file: {e}")
+        return []
+
+# POST route to upload iCal file
+@app.route('/upload', methods=['POST'])
+def upload_ical():
+    try:
+        if 'ical' not in request.files:
+            return "No file part", 400
+
+        file = request.files['ical']
+        if file.filename == '':
+            return "No selected file", 400
+
+        user_id = request.form.get('user_id', 'unknown')
+        filename = secure_filename(file.filename)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(filepath)
+
+        # Parse iCal and store in MongoDB
+        events = parse_ical(filepath)
+        for event in events:
+            event['user_id'] = user_id
+        if events:
+            events_collection.insert_many(events)
+
+        return jsonify({"message": "iCal parsed and stored!", "events_count": len(events)})
+    except Exception as e:
+        print(f"Error uploading iCal: {e}")
+        return jsonify({"error": str(e)}), 500
+
+# Optional: GET route to fetch all events for a user
+@app.route('/events/<user_id>', methods=['GET'])
+def get_events(user_id):
+    try:
+        events = list(events_collection.find({"user_id": user_id}, {"_id": 0}))
+        return jsonify(events)
+    except Exception as e:
+        print(f"Error fetching events: {e}")
+        return jsonify({"error": str(e)}), 500
+    
 # -------------------------
 # Run server
 # -------------------------
-if __name__ == "__main__":
-    app.run(debug=True, port=8000)
+if __name__ == '__main__':
+    os.makedirs('uploads', exist_ok=True)
+    # bind to 0.0.0.0 so frontend running on localhost can reach this container/host
+    app.run(debug=True, host="0.0.0.0", port=8000)
