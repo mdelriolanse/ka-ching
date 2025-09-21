@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
-const CALENDAR_URL = (import.meta.env as any).VITE_CALENDAR_URL || 'http://localhost:5000'
+const CALENDAR_URL = (import.meta.env as any).VITE_CALENDAR_URL || 'http://localhost:8000'
 
 // Upload calendar
 async function handleUpload(file: File, userId: string) {

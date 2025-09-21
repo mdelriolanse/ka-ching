@@ -1,12 +1,15 @@
 import os
+import uuid
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from User import User
 from Task import Task
+from Event import Event
 from icalendar import Calendar
 from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 from pymongo import MongoClient
+from datetime import datetime
 
 # Connect to Flask
 app = Flask(__name__)
@@ -151,25 +154,45 @@ def autofit():
 # -------------------------
 
 def parse_ical(file_path):
+    events = []
     try:
         with open(file_path, 'rb') as f:
             gcal = Calendar.from_ical(f.read())
 
-        events = []
         for component in gcal.walk():
-            if component.name == "VEVENT":
+            name = component.name.upper()
+            if name == "VEVENT":
+                dtstart = component.get('dtstart')
+                dtend = component.get('dtend')
+
+                if not dtstart or not dtend:
+                    print("Skipping event due to missing start or end:", component.get('summary'))
+                    continue
+
+                start = dtstart.dt
+                end = dtend.dt
+
+                # Convert to ISO string if datetime
+                if hasattr(start, 'isoformat'):
+                    start = start.isoformat()
+                if hasattr(end, 'isoformat'):
+                    end = end.isoformat()
+
                 event = {
-                    "title": str(component.get('summary')),
-                    "description": str(component.get('description') or ""),
-                    "location": str(component.get('location') or ""),
-                    "start": component.get('dtstart').dt.isoformat(),
-                    "end": component.get('dtend').dt.isoformat()
+                    "title": str(component.get('summary') or ""),
+                    "start": start,
+                    "end": end,
+                    "full_day": bool(component.get('dtstart').params.get('VALUE') == 'DATE')
                 }
                 events.append(event)
-        return events
+
     except Exception as e:
         print(f"Error parsing iCal file: {e}")
         return []
+
+    print(f"Parsed {len(events)} events from iCal.")
+    return events
+
 
 # POST route to upload iCal file
 @app.route('/upload', methods=['POST'])
@@ -183,31 +206,49 @@ def upload_ical():
             return "No selected file", 400
 
         user_id = request.form.get('user_id', 'unknown')
+        user = get_or_create_user(user_id)
+
         filename = secure_filename(file.filename)
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
 
         # Parse iCal and store in MongoDB
         events = parse_ical(filepath)
-        for event in events:
-            event['user_id'] = user_id
-        if events:
-            events_collection.insert_many(events)
+        # for event in events:
+        #     event['user_id'] = user_id
+        # if events:
+        #     events_collection.insert_many(events)
+        for ev in events:
+            event = Event(
+                title=ev['title'],
+                start=ev['start'],
+                end=ev['end'],
+            )
+            user.add_event(event)
 
-        return jsonify({"message": "iCal parsed and stored!", "events_count": len(events)})
+        return jsonify({"message": f"iCal parsed and stored for {user_id}!", "events_count": len(events)})
     except Exception as e:
         print(f"Error uploading iCal: {e}")
         return jsonify({"error": str(e)}), 500
 
-# Optional: GET route to fetch all events for a user
 @app.route('/events/<user_id>', methods=['GET'])
 def get_events(user_id):
     try:
-        events = list(events_collection.find({"user_id": user_id}, {"_id": 0}))
+        user = get_or_create_user(user_id)
+        events = []
+        for e in user.events:
+            events.append({
+                "id": getattr(e, "uid", None) or str(uuid.uuid4()),
+                "title": e.title,
+                "start": e.start.isoformat() if hasattr(e.start, "isoformat") else str(e.start),
+                "end": e.end.isoformat() if hasattr(e.end, "isoformat") else str(e.end),
+                "full_day": e.full_day
+            })
         return jsonify(events)
     except Exception as e:
         print(f"Error fetching events: {e}")
         return jsonify({"error": str(e)}), 500
+
     
 # -------------------------
 # Run server

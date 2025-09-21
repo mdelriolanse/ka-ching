@@ -10,6 +10,7 @@ class User:
         self.streak = 1
         self.completed_tasks = []
         self.to_do_tasks = []
+        self.events = []
         self.last_completed_task_time = None
         self.boost = 1
         self.permanent_boost = 1
@@ -79,6 +80,12 @@ class User:
         self.completed_tasks = []
         self.upgrades = {k: (0, v[1]) for k, v in self.upgrades.items()}
         return True
+    
+    def add_event(self, event):
+        self.events.append(event)
+
+    def get_events(self):
+        return [e.summary() for e in self.events]
 
     def summary(self):
         return {

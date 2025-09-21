@@ -14,9 +14,11 @@ class XPScore(BaseModel):
     xp_reward: int
 
 class Task:
-    def __init__(self, title: str, xp_reward: float = 10, durationMin: int = 25):
+    def __init__(self, title: str, xp_reward: float = 10, durationMin: int = 25, start: datetime = datetime.now()):
         self.id = str(uuid.uuid4())
         self.title = title
+        self.durationMin = durationMin
+        self.start = start
         self.xp_reward = xp_reward
         self.completed = False
 
