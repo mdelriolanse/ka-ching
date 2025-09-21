@@ -5,12 +5,20 @@ import { api } from '../services/api'
 import { useSfx } from '../sfx/useSfx'
 import { Sword, RefreshCw } from 'lucide-react'
 
-type Task = { id: string; title: string; durationMin?: number; scheduledAt?: string; completed?: boolean }
+type Task = {
+  id: string; 
+  title: string;
+  durationMin?: number; 
+  scheduledAt?: string; 
+  completed?: boolean
+  due?: string; 
+}
 
 export default function Dashboard(){
   const [tasks,setTasks] = useState<Task[]>([])
   const [title,setTitle] = useState('')
   const [duration,setDuration] = useState(25)
+  const [due,setDue] = useState('')
   const [xp,setXp] = useState(0)
   const [level,setLevel] = useState(1)
   const [streak,setStreak] = useState(0)
@@ -84,10 +92,13 @@ export default function Dashboard(){
       const taskFromBackend = {
         id: res.id,
         title: res.title,
-        durationMin: res.durationMin
+        durationMin: res.durationMin,
+        due: res.due || undefined
       }
       setTasks(prev => [taskFromBackend, ...prev])
       setTitle('')
+      setDuration(25)
+      setDue('') // reset due date input
     }).catch(console.error)
   }
 
@@ -124,8 +135,28 @@ export default function Dashboard(){
           <button className="btn btn-primary" onClick={autofit}><Sparkles size={16}/> Auto-fit</button>
         </div>
         <div style={{display:'flex',gap:8,marginBottom:12}}>
-          <input className="field" style={{flex:1}} value={title} onChange={e=>setTitle(e.target.value)} placeholder="Add an arcade task"/>
-          <input className="field" type="number" value={duration} onChange={e=>setDuration(parseInt(e.target.value||'0'))} style={{width:120}}/>
+          <input
+            className="field"
+            style={{flex:1}}
+            value={title}
+            onChange={e=>setTitle(e.target.value)}
+            placeholder="Add an arcade task"
+          />
+          <input
+            className="field"
+            type="number"
+            value={duration}
+            onChange={e=>setDuration(parseInt(e.target.value||'0'))}
+            style={{width:120}}
+            placeholder="Duration (min)"
+          />
+          <input
+            className="field"
+            type="datetime-local"
+            value={due}
+            onChange={e => setDue(e.target.value)}
+            style={{width:200}}
+          />
           <button className="btn btn-primary" onClick={addTask}><Plus size={16}/> Add</button>
         </div>
         <div>
@@ -134,7 +165,10 @@ export default function Dashboard(){
               <motion.div key={t.id} initial={{opacity:0, y:6}} animate={{opacity:1, y:0}} exit={{opacity:0, y:-6}} className="panel" style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
                 <div>
                   <div className="heading" style={{fontSize:22}}>{t.title}</div>
-                  <div className="mono-dim">{t.durationMin||25} min</div>
+                  <div className="mono-dim">
+                  {t.durationMin || 25} min
+                  {t.scheduledAt ? ` • Due: ${new Date(t.scheduledAt).toLocaleString()}` : ''}
+                </div>
                 </div>
                 <button className="btn btn-coin" onClick={()=>completeTask(t.id)} disabled={t.completed}>
                   <CheckCircle2 size={16}/> {t.completed?'Done':'Complete'}
@@ -156,7 +190,7 @@ export default function Dashboard(){
         </div>
         <div className="mono-dim" style={{marginTop:6}}>{xp} XP</div>
         <div className="mono-dim" style={{marginTop:12,fontSize:12}}>
-          Calls: tasks → POST /tasks, POST /tasks/:id/complete; users → GET /users/:id/xp
+          (Hint: Completing tasks gives XP. Higher streaks give bonus XP. Upgrades give passive XP income.)
         </div>
       </aside>
 

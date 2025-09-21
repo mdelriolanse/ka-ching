@@ -124,7 +124,7 @@ export default function CalendarView() {
         </div>
 
         <div className="mono-dim" style={{ marginTop: 12, fontSize: 12 }}>
-          Backend: POST /upload, GET /events/:user_id
+          (Hint: You can export iCal files from Google Calendar, Apple Calendar, Outlook, etc.)
         </div>
       </div>
     </div>

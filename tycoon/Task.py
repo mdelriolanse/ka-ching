@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-import google.genai as genai
 from google.genai import Client
 from google.genai import types
 import uuid
@@ -14,11 +13,12 @@ class XPScore(BaseModel):
     xp_reward: int
 
 class Task:
-    def __init__(self, title: str, xp_reward: float = 10, durationMin: int = 25, start: datetime = datetime.now()):
+    def __init__(self, title: str, xp_reward: float = 10, durationMin: int = 25, start: datetime = datetime.now(), due: datetime = datetime.now() + timedelta(days=1)):
         self.id = str(uuid.uuid4())
         self.title = title
         self.durationMin = durationMin
         self.start = start
+        self.due = due
         self.xp_reward = xp_reward
         self.completed = False
 
@@ -34,7 +34,6 @@ class Task:
 
 
     def assign_xp(self):
-
         reference_tasks = [
             {"title": "Do the Laundry", "xp_reward": 20},
             {"title": "Attend team meeting", "xp_reward": 10},
@@ -47,13 +46,12 @@ class Task:
             {"title": "Deploy to production", "xp_reward": 100}
         ]
 
-
         # Call the Gemini model
         client = Client(api_key=os.getenv('GOOGLE_API_KEY'))
         response = client.models.generate_content(
             model="gemini-2.5-flash",
 
-            contents=f"Given {reference_tasks}, Assign XP to {self.title} based on similarity of task importance and effort.",
+            contents=f"Given {reference_tasks}, Assign XP to {self.title} based on similarity of task importance and effort from 10-100 XP",
             config=types.GenerateContentConfig(
                 temperature=0,
                 response_mime_type="application/json",
@@ -62,7 +60,6 @@ class Task:
         )
         )
         self.xp_reward = json.loads(response.text)['xp_reward']
-        
 
         # Extract the assigned XP value from the response
         # if response.candidates:
@@ -82,6 +79,10 @@ class Task:
     def duration(self):
         """Return duration of the task in minutes"""
         return self.durationMin
+    
+    def set_due(self, due: datetime):
+        """Set the due date of the task"""
+        self.due = due
 
 
 if __name__ == "__main__":
