@@ -83,6 +83,18 @@ class Task:
     def set_due(self, due: datetime):
         """Set the due date of the task"""
         self.due = due
+    
+    def summary(self):
+        """Return a summary of the task"""
+        return {
+            "id": self.id,
+            "title": self.title,
+            "durationMin": self.durationMin,
+            "start": self.start.isoformat() if hasattr(self.start, "isoformat") else str(self.start),
+            "due": self.due.isoformat() if hasattr(self.due, "isoformat") else str(self.due),
+            "xp_reward": self.xp_reward,
+            "completed": self.completed
+        }
 
 
 if __name__ == "__main__":

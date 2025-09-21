@@ -89,14 +89,21 @@ class User:
 
     def summary(self):
         return {
-            "username": self.username,
-            "level": self.level,
-            "xp": self.xp,
-            "xp_to_next_level": self.xp_to_next_level,
-            "streak": self.streak,
-            "upgrades": self.upgrades,
-            "rebirths": self.rebirths,
-            "completed_tasks": [{"id": t.id, "title": t.title} for t in self.completed_tasks]
+            username: self.username,
+            level: self.level,
+            xp: self.xp,
+            xp_to_next_level: self.xp_to_next_level,
+            streak: self.streak,
+            completed_tasks: len(self.completed_tasks),
+            to_do_tasks: len(self.to_do_tasks),
+            events: len(self.events),
+            last_completed_task_time: self.last_completed_task_time.isoformat() if self.last_completed_task_time else None,
+            boost: self.boost,
+            permanent_boost: self.permanent_boost,
+            rebirths: self.rebirths,
+            upgrades: self.upgrades
+            tasks: [t.summary() for t in self.to_do_tasks]
+            events: [e.summary() for e in self.events]
         }
 
         

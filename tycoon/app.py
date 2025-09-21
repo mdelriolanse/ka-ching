@@ -20,8 +20,8 @@ load_dotenv()
 # Connect to MongoDB
 mongo_uri = os.getenv('MONGO_URI')
 client = MongoClient(mongo_uri)
-db = client['ical_calendar']
-events_collection = db['events']
+db = client['tycoon']
+users_collection = db['users']
 
 # In-memory stores
 users = {}
@@ -193,8 +193,6 @@ def parse_ical(file_path):
     print(f"Parsed {len(events)} events from iCal.")
     return events
 
-
-# POST route to upload iCal file
 @app.route('/upload', methods=['POST'])
 def upload_ical():
     try:
@@ -259,7 +257,30 @@ def clear_events(user_id):
         print(f"Error clearing events: {e}")
         return jsonify({"error": str(e)}), 500
 
+# Fetch user from MongoDB
+@app.route("/users/<username>/load", methods=["GET"])
+def load_user(username):
+    doc = users_collection.find_one({"username": username}, {"_id": 0})
+    if doc:
+        return jsonify(doc)
+    else:
+        # If user doesn't exist, create new
+        user = User(username)
+        users_collection.insert_one(user.summary())
+        return jsonify(user.summary())
 
+# Save user to MongoDB
+@app.route("/users/<username>/save", methods=["POST"])
+def save_user(username):
+    data = request.json
+    if not data:
+        return jsonify({"error": "Missing user data"}), 400
+    users_collection.update_one(
+        {"username": username},
+        {"$set": data},
+        upsert=True
+    )
+    return jsonify({"message": "User saved successfully"})
     
 # -------------------------
 # Run server

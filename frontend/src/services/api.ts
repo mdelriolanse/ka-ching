@@ -15,8 +15,6 @@ async function fetchEvents(userId: string) {
   console.log(events)
 }
 
-
-
 const calendar = {
   upload: async (userId: string, file: File) => {
     const formData = new FormData()
